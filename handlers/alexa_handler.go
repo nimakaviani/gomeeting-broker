@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/nimakaviani/gomeeting-broker/models"
@@ -22,7 +24,7 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 	alexaRequest := models.AlexaRequest{}
 	err := json.NewDecoder(request.Body).Decode(&alexaRequest)
 
-	startTime, duration, err := parseDuration(alexaRequest)
+	startTime, duration, err := parse(alexaRequest)
 	if err != nil {
 		logger.Error("failed-parse-duration", err)
 	}
@@ -41,16 +43,26 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 }
 
 func prepareResponse(startTime time.Time, duration time.Duration) string {
-	return "Hello world!"
+	return fmt.Sprintf("Hello world! %#v", startTime)
 }
 
-func parseDuration(alexaRequest models.AlexaRequest) (time.Time, time.Duration, error) {
+func parse(alexaRequest models.AlexaRequest) (time.Time, time.Duration, error) {
+	// startInterval := parseTime(alexaRequest.Request.Intent.Slots["StartTime"])
+	// duration := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
+	// println("startInterval", startInterval)
 	return time.Now(), 1 * time.Hour, nil
 }
 
-func parseTime(alexaRequest models.AlexaRequest) time.Duration {
-	return 10 * time.Hour
-}
+// func parseTime(alexaRequest models.AlexaRequest) (time.Duration, error) {
+// 	duration := 1 * time.Hour
+// 	if alexaRequest.Request.Intent.Name != "" {
+// 		duration, err := time.Parse(alexaRequest.Request.Intent.Slots["StartTime"].Value, 1*time.Hour)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
+// 	return duration, nil
+// }
 
 func humanizeLength(length int) (int, string) {
 	switch {
@@ -63,4 +75,31 @@ func humanizeLength(length int) (int, string) {
 	default:
 		return 1, "hour"
 	}
+}
+
+func parseDuration(alexaSlot models.AlexaSlot) time.Duration {
+	if alexaSlot.Value == "" {
+		return 1 * time.Hour
+	}
+
+	regex, err := regexp.Compile("PT(\\d+)(M|H)")
+	if err != nil {
+		return 1 * time.Hour
+	}
+
+	matches := regex.FindStringSubmatch(alexaSlot.Value)
+
+	val, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 1 * time.Hour
+	}
+
+	switch matches[1] {
+	case "M", "m":
+		return time.Duration(val) * time.Minute
+	case "H", "h":
+		return time.Duration(val) * time.Hour
+	}
+
+	return 1 * time.Hour
 }
