@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type AlexaRequest struct {
 	Version string       `json:"version"`
 	Session AlexaSession `json:"session"`
@@ -37,6 +39,101 @@ type AlexaIntent struct {
 type AlexaSlot struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+func NewAlexaResponse() *AlexaResponse {
+	er := &AlexaResponse{
+		Version: "1.0",
+		Response: AlexaRespBody{
+			ShouldEndSession: true,
+		},
+	}
+
+	return er
+}
+
+func (this *AlexaResponse) OutputSpeech(text string) *AlexaResponse {
+	this.Response.OutputSpeech = &AlexaRespPayload{
+		Type: "PlainText",
+		Text: text,
+	}
+
+	return this
+}
+
+func (this *AlexaResponse) OutputSpeechSSML(text string) *AlexaResponse {
+	this.Response.OutputSpeech = &AlexaRespPayload{
+		Type: "SSML",
+		SSML: text,
+	}
+
+	return this
+}
+
+func (this *AlexaResponse) Card(title string, content string) *AlexaResponse {
+	return this.SimpleCard(title, content)
+}
+
+func (this *AlexaResponse) SimpleCard(title string, content string) *AlexaResponse {
+	this.Response.Card = &AlexaRespPayload{
+		Type:    "Simple",
+		Title:   title,
+		Content: content,
+	}
+
+	return this
+}
+
+func (this *AlexaResponse) StandardCard(title string, content string, smallImg string, largeImg string) *AlexaResponse {
+	this.Response.Card = &AlexaRespPayload{
+		Type:    "Standard",
+		Title:   title,
+		Content: content,
+	}
+
+	if smallImg != "" {
+		this.Response.Card.Image.SmallImageURL = smallImg
+	}
+
+	if largeImg != "" {
+		this.Response.Card.Image.LargeImageURL = largeImg
+	}
+
+	return this
+}
+
+func (this *AlexaResponse) LinkAccountCard() *AlexaResponse {
+	this.Response.Card = &AlexaRespPayload{
+		Type: "LinkAccount",
+	}
+
+	return this
+}
+
+func (this *AlexaResponse) Reprompt(text string) *AlexaResponse {
+	this.Response.Reprompt = &AlexaReprompt{
+		OutputSpeech: AlexaRespPayload{
+			Type: "PlainText",
+			Text: text,
+		},
+	}
+
+	return this
+}
+
+func (this *AlexaResponse) EndSession(flag bool) *AlexaResponse {
+	this.Response.ShouldEndSession = flag
+
+	return this
+}
+
+func (this *AlexaResponse) String() ([]byte, error) {
+	jsonStr, err := json.Marshal(this)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonStr, nil
 }
 
 // Response Types
