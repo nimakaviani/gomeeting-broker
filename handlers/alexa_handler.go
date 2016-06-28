@@ -24,18 +24,21 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 	alexaRequest := models.AlexaRequest{}
 	err := json.NewDecoder(request.Body).Decode(&alexaRequest)
 
+	alexaResp := models.NewAlexaResponse()
+
+	fmt.Printf("request %#v\n", alexaRequest)
 	startTime, duration, err := parse(alexaRequest)
 	if err != nil {
 		logger.Error("failed-parse-duration", err)
+		alexaResp.OutputSpeech("I could not understand your request")
+	} else {
+		alexaResp.OutputSpeech(prepareResponse(startTime, duration))
+		if err != nil {
+			logger.Error("failed-prepare-response", err)
+		}
 	}
 
-	alexaResp := models.NewAlexaResponse()
-	alexaResp.OutputSpeech(prepareResponse(startTime, duration))
 	json, err := alexaResp.String()
-	if err != nil {
-		logger.Error("failed-prepare-response", err)
-	}
-
 	writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
 	writer.Write(json)
 
@@ -47,22 +50,35 @@ func prepareResponse(startTime time.Time, duration time.Duration) string {
 }
 
 func parse(alexaRequest models.AlexaRequest) (time.Time, time.Duration, error) {
-	// startInterval := parseTime(alexaRequest.Request.Intent.Slots["StartTime"])
-	// duration := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
-	// println("startInterval", startInterval)
-	return time.Now(), 1 * time.Hour, nil
+	startTime, err := parseTime(alexaRequest.Request.Intent.Slots["StartAt"])
+	duration, err := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
+	return startTime, duration, err
 }
 
-// func parseTime(alexaRequest models.AlexaRequest) (time.Duration, error) {
-// 	duration := 1 * time.Hour
-// 	if alexaRequest.Request.Intent.Name != "" {
-// 		duration, err := time.Parse(alexaRequest.Request.Intent.Slots["StartTime"].Value, 1*time.Hour)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-// 	return duration, nil
-// }
+func parseTime(alexaSlot models.AlexaSlot) (time.Time, error) {
+	if alexaSlot.Value != "" {
+		parsedTime, err := time.Parse("15:04", alexaSlot.Value)
+
+		currentTime := time.Now()
+
+		expectTime := time.Date(
+			currentTime.Year(),
+			currentTime.Month(),
+			currentTime.Day(),
+			parsedTime.Hour(),
+			parsedTime.Minute(),
+			0,
+			0,
+			currentTime.Location(),
+		)
+
+		if err != nil {
+			return time.Now(), err
+		}
+		return expectTime, nil
+	}
+	return time.Now(), nil
+}
 
 func humanizeLength(length int) (int, string) {
 	switch {
@@ -77,29 +93,29 @@ func humanizeLength(length int) (int, string) {
 	}
 }
 
-func parseDuration(alexaSlot models.AlexaSlot) time.Duration {
+func parseDuration(alexaSlot models.AlexaSlot) (time.Duration, error) {
 	if alexaSlot.Value == "" {
-		return 1 * time.Hour
+		return 1 * time.Hour, nil
 	}
 
 	regex, err := regexp.Compile("PT(\\d+)(M|H)")
 	if err != nil {
-		return 1 * time.Hour
+		return 1 * time.Hour, err
 	}
 
 	matches := regex.FindStringSubmatch(alexaSlot.Value)
 
 	val, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return 1 * time.Hour
+		return 1 * time.Hour, err
 	}
 
-	switch matches[1] {
+	switch matches[2] {
 	case "M", "m":
-		return time.Duration(val) * time.Minute
+		return time.Duration(val) * time.Minute, nil
 	case "H", "h":
-		return time.Duration(val) * time.Hour
+		return time.Duration(val) * time.Hour, nil
 	}
 
-	return 1 * time.Hour
+	return 1 * time.Hour, nil
 }
