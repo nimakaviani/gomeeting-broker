@@ -20,6 +20,8 @@ func main() {
 
 	handler := handlers.NewHandler()
 	http.HandleFunc("/", handler.Alexa)
+	http.HandleFunc("/google73d91fa1cfb6fa88.html", handler.Verify)
+	http.HandleFunc("/oauth", handler.OAuth)
 
 	httpServer := http_server.New(":"+*port, http.DefaultServeMux)
 	monitor := ifrit.Invoke(httpServer)
