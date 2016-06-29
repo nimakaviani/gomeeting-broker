@@ -16,9 +16,12 @@ var port = flag.String(
 )
 
 func main() {
+
+	gCalendarClient := initCalendar()
+
 	flag.Parse()
 
-	handler := handlers.NewHandler()
+	handler := handlers.NewHandler(gCalendarClient)
 	http.HandleFunc("/", handler.Alexa)
 	http.HandleFunc("/google73d91fa1cfb6fa88.html", handler.Verify)
 	http.HandleFunc("/oauth", handler.OAuth)

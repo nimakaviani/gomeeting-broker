@@ -11,6 +11,8 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"github.com/nimakaviani/gomeeting-broker/utils"
+
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -89,7 +91,7 @@ func saveToken(file string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func initCalendar() {
+func initCalendar() utils.GCalendar {
 	ctx := context.Background()
 
 	b, err := ioutil.ReadFile("client_secret.json")
@@ -103,5 +105,5 @@ func initCalendar() {
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	getClient(ctx, config)
+	return utils.NewGCalendar(getClient(ctx, config))
 }
