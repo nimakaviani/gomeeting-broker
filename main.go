@@ -16,7 +16,6 @@ var port = flag.String(
 )
 
 func main() {
-
 	gCalendarClient := initCalendar()
 
 	flag.Parse()

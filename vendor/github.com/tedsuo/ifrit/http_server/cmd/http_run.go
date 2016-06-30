@@ -1,0 +1,122 @@
+package main
+
+import (
+	"crypto/tls"
+	"fmt"
+	"net/http"
+	"strconv"
+	"sync/atomic"
+
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/http_server"
+)
+
+var serverCert = `
+-----BEGIN CERTIFICATE-----
+MIIEHTCCAgegAwIBAgIRANhEv5rdKoFwcAWz2IBtEZgwCwYJKoZIhvcNAQELMBEx
+DzANBgNVBAMTBnRlc3RDQTAeFw0xNTA5MjIyMDQ3MDBaFw0xNzA5MjIyMDQ3MDBa
+MBQxEjAQBgNVBAMTCTEyNy4wLjAuMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+AQoCggEBAN/qEi1Y0tOR0Cm2b6gSwQ+arxs4swW6CxWpV1QOztWaxy0OoXTb8O+R
+jPHvoOV3dZUgUdYXBylF/duYEoUXqh+gIQqdjPcWM60crRSsdSLxe3u25X68lhuW
+qJdE+wTBR4BkW7cqDavtyD9ce9ezYq1ppbLS0WL1HNHqovqxzpjGffV1Ko2tOliZ
+nqTK6qOoCuOHfXaqEn2O6IkyQabUGUCgNSXxaUwa1JcuPqkVZGz4n9HnI2kI7a+r
+8Eqt0onsF71Ez3Gq4e9cCdtPAR83sz0kj0hvOvuYAU3K23uiY2f2q8hDTyx1kIK/
+ZbbM4k5REkk873CHOdmZ5Jz/g2wSTMECAwEAAaNxMG8wDgYDVR0PAQH/BAQDAgC4
+MB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUCeAgxqLT
++PLyKD2craCKWKyxMTUwHwYDVR0jBBgwFoAU/oQYuyfFd6+EYHcewWQDrAeM7JQw
+CwYJKoZIhvcNAQELA4ICAQAZXsGAMpkiEfrmvVmdPd8ke7oD3C+bMAxctNX8/apT
+bY06KQgTeD15mOH0UTE9F1RVI23hKWScZIR2v1z6hTu1raYNDRj2dOaJRciy49zL
+Z5f3PGRTYiNRBIvEyVV8rda0lqtZY1mzAeIEb01kk82CMwdIvMkd9NNq83U54JD7
+rzpd1AXWF8iVFdMa6/+fjMbFS0Y01DSjmHfRHJGl1orBMOBWpndlU1uTjmf6mHb5
+oPrz08Sw5oDeNR1lGUnWytAanbqoDeak/c4El67m3qXDmKwmXfeohwXio1UEsNn4
+/oXopPJ/6w1yvb8UgDeFUiQkuayAwiVZQtVQoDeujvXCLxlnj9sXt7CIPTehnlpf
+x5GdnhUphpMoai3luv2AoB+aOUXFT+vBrz7kNCeMzG368BlAWuWjvOBrnnG2h6Ro
+n2yV2ecMOLj7LgdsJQiDRacz7iu1S1ZOVoEeKI5b7rSw2zFzN9h76yJPWkb19uuT
+CrOwmpRtlO/QLN7SHpi8lhcJh7ATx7ur8cB3LNes6rvZPsQj/ZanaA0TX1NTjIM4
+l09lV3fuxgDdVvO93r5Knvfifa/piG21U3Pq93rgBjan9P2aosk5DGd4Qs73C4u4
+VDWVWW09SPJT8PBOatPvlEvKSoqk+dIkytmwo4v7S0d8tS5hi4AAfTqcy6e3Va82
+qw==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIE/zCCAumgAwIBAgIBATALBgkqhkiG9w0BAQswETEPMA0GA1UEAxMGdGVzdENB
+MB4XDTE1MDkyMjIwNDU1MVoXDTI1MDkyMjIwNDU1OFowETEPMA0GA1UEAxMGdGVz
+dENBMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAvb0WvjS+tS9jfQ/I
+jTCkYF9DL07FCNByPCnQklAQGYXDt5v2lbt5rKWMRecckCEzPr3++V77qiDgd91+
+dGPizLkTDNzSBdvWL7AnuoNDAmUrRajOGRmrWW7nN31FDeUdnFpU7uyDmuUG8RER
+0b3fGQEPKpWVrCLN6IAZ+AL7sADAkETQ61q09s6vkdtmLLaLngwLWeQtTkIM6wHq
+18R3GqKcQijK3J4qD06L5SjhSzloeAH1ixYPure/R5Ta2dEVtWwo5Sm8O+IMiEXU
+S68R+81DRbHke19avZmV2UffNoVoAvZBOxWIlmhtKjITy7pdVUoLvTI9cBIrlsPH
+nO47N4blAE9ozc2chFDrPeRMljKWY8tSmTRz9p5GtxkrX1nrHbmfHoVnJqf5jUeh
+wAy9/OQ9UqO41hTsEAyj9kI7avDHUxQ0Z9k7JzxxRI/LizL07Fvg1iQphB+Ybdgy
+oXlpzG6Oi5UUm3e+vgk4FGvvNIyG3euxYCgolQD2GrIRXErLCBQYi/ZSL1/Gp6Xg
+vyCVKpk5xbr0amDB/mtAEAIbXk6QRGiRoKrVnaCjB/3dZ5hhAeWiNBquTg99hRGO
+fjmdsyD1A44Law0PwZWHBmxSQkFMtmqye3gcat3UZ3YYIv0HBv3KyScDj/61io34
+v/w+t4Vp+AzpT7kTLwJxBRPpHXMCAwEAAaNmMGQwDgYDVR0PAQH/BAQDAgAGMBIG
+A1UdEwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYEFP6EGLsnxXevhGB3HsFkA6wHjOyU
+MB8GA1UdIwQYMBaAFP6EGLsnxXevhGB3HsFkA6wHjOyUMAsGCSqGSIb3DQEBCwOC
+AgEAV1C1gUY05rzdrZIKWMcl4wX2LQm1QIR3cK55oU93KitlM0e7EtdsACBUrb+Q
+84IHyH2maa2cCCw+i88pltlYwM2X/YE1bIj2wtaBo593J6uUBJCiEF9xo3tcjscF
+AUCo023fRyoqHMBqla3pr+aa47Ne76rAjQMLs11WoDkwDM6QyLTKu9TyYRAinkKL
+ArfYXqrhiW9jeS3JxWweGU4UJ9DYNCW5fVqhK0RPkCDWulvA3yLIYXc9ah6ifPy0
+L8xAcNs++QEE/ocbQA0BYRjDGHJRsqaqhzyYqZncBKFmbel2xkg1DFqGTG/TVwB6
+EsCC7T5O9munqjKxkq7NLOY5rt/A+ExSvDu73J+WftS23mXjtOQ7RH3seBA/RfkZ
+w3jezSkYHi5A8euI1PL+wVBet5Q7z1ayWeSnnnNMqh9BJmC1FEeGDRx0puPnzQYw
+W/c8PXk3EvFW8WQPTAiWTO0aEqKV32UCD/Vh9+POJyszpGLrNvEmqT2hYBQ9JwSo
+YEAA4LteeGF4h8B2KOW8ePKGNCf8+RNCfvzLNrYIoMWM02jNXssyCmCna8qYVmgC
+fxwmyFphkW4r8htpwGdhHSuBUUxAciQmTq95S+6N29EnmfMYCrOI3AmLktPQtNt2
+foFWbeATaQJWJXaWA02U43M4m23bJp0xboAqiaND4wMVPAw=
+-----END CERTIFICATE-----
+`
+
+var serverKey = `
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA3+oSLVjS05HQKbZvqBLBD5qvGzizBboLFalXVA7O1ZrHLQ6h
+dNvw75GM8e+g5Xd1lSBR1hcHKUX925gShReqH6AhCp2M9xYzrRytFKx1IvF7e7bl
+fryWG5aol0T7BMFHgGRbtyoNq+3IP1x717NirWmlstLRYvUc0eqi+rHOmMZ99XUq
+ja06WJmepMrqo6gK44d9dqoSfY7oiTJBptQZQKA1JfFpTBrUly4+qRVkbPif0ecj
+aQjtr6vwSq3SiewXvUTPcarh71wJ208BHzezPSSPSG86+5gBTcrbe6JjZ/aryENP
+LHWQgr9ltsziTlESSTzvcIc52ZnknP+DbBJMwQIDAQABAoIBACnJ3oCWDiqsEORo
+BuigL2XBIaL77vVHpl/xjbnDVbipvThcfad4kLu1N0/DwAxzQf+F26AQBicex+Te
+ub4bD4X9dY0soC1Q+G37ZxXvpaDS3o/VL3l6qq0VbftlRU+63qRIlpFViN2ob/Hb
+ScWU1fq1N9Zq3+cPBcTrfGU7H+qE74kVBU3NvHNtsuia+nNmy7LTxHjfUtQWwUiH
+tMTX9+QZ1ixyspQDa2LkFZJ8QX+r6qQnEOa5GLUIwajUBX2Kv/71mYxF15fY4CWQ
+jAvtuYVcZ38mzhCiyqyuNxH20gcgFnW6vZniObAXzJAqLgy1Lzpfdn69O+mNh9n9
+wUSJ+M0CgYEA7ll06mgkxDTFezjOaVIy16dsUiWh1qjH9n+hguSmVXvzZAvnvXFc
+oIw9IaXdAEzIESgsKx0LrojIqxmM1AhTX12agw3tngNlVPqzqzmj/1B8h8J6rhEA
+J8T4ay8Y277U+BWyGdyZOegfU38V+Ns3uJTUR9gli6XuoOgzvkfJ4yMCgYEA8H71
+dpx61JhzKSEkOtvCyYCPTkx+mf0OVNKvodeTPa/AFoWfcuipaThvSwwune/k/e18
+/mm14siAtx/4/U0pK7TW7q/QMHEntG254ZOTjAIh7l/K9Qk3paNX2rn2uV8eh3mx
+779Bi71cDfLWfc6KBS0O6GQ/4phbImUfQZEjEMsCgYBb2zv0rqgkuZW19GGQM26G
+r+5OBlTFroxJ0kxDbq0v2rIlR3VLDCo/cWyJ0CtI105vVkUXZH1BCVQUpKcifAbt
+hNxsT2zY7cQaqPefMHqkhbdIdsni1YhyyzVV0XPKFFRtO6dE0kB3EZ8pBZxJKOrj
+hu/8tC9cD1nUx0hRt8b1cwKBgQCtQAi8xcWG2bw8aO+cpywP1VlnYpvheveUC6MS
+yCX+Tlnm36QaN5mzf0BNpB0BEgy5ERj2fljVYvO2+IV6lNeP8NrVYDpua1XbGSDL
+bHDib7bZ7pBbLaS04pMrssQWjnuDxRt2RyWE8YkbU1FJmDy9tdQDfhS3vGIKySZX
+KaNFOQKBgQDmlYqY889IsnkJdHoIl4MolsoO7cfErfozCYzfZ5qj5CbI+nJrp1rd
+pHRhg1lo/Rbad07ZCodC0mN+45P2qzzA89Twx8RQFfBKFuyGPpOYrIsP0+pWs+N1
+ZC0/Y9+tI+AiwUjPG+KB+nEGS24/EXVCf7fnBlq0cuiTm/QORoSK5w==
+-----END RSA PRIVATE KEY-----
+`
+
+func main() {
+	var count int32
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		result := atomic.AddInt32(&count, 1)
+		w.Write([]byte(strconv.Itoa(int(result))))
+	})
+
+	tlsCert, err := tls.X509KeyPair([]byte(serverCert), []byte(serverKey))
+	if err != nil {
+		panic(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+	}
+
+	server := http_server.NewTLSServer("127.0.0.1:8080", handler, tlsConfig)
+	waitChan := ifrit.Envoke(server).Wait()
+	println("running")
+	err = <-waitChan
+	fmt.Printf("Terminated: %s\n", err.Error())
+}
