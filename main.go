@@ -3,10 +3,14 @@ package main
 import (
 	"flag"
 	"net/http"
+	"syscall"
 
 	"github.com/nimakaviani/gomeeting-broker/handlers"
+	"github.com/nimakaviani/gomeeting-broker/utils"
 	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
+	"github.com/tedsuo/ifrit/sigmon"
 )
 
 var port = flag.String(
@@ -16,17 +20,24 @@ var port = flag.String(
 )
 
 func main() {
-	gCalendarClient := initCalendar()
-
 	flag.Parse()
 
-	handler := handlers.NewHandler(gCalendarClient)
-	http.HandleFunc("/", handler.Alexa)
+	httpServer := http_server.New(":"+*port, http.DefaultServeMux)
+	gCalendarRunner := utils.NewCalendarRunner()
+
+	handler := handlers.NewHandler(gCalendarRunner)
+	http.HandleFunc("/findroom", handler.Alexa)
 	http.HandleFunc("/google73d91fa1cfb6fa88.html", handler.Verify)
 	http.HandleFunc("/oauth", handler.OAuth)
+	http.HandleFunc("/oauthcallback", handler.OAuthCallback)
+	http.HandleFunc("/favicon", handler.Icon)
 
-	httpServer := http_server.New(":"+*port, http.DefaultServeMux)
-	monitor := ifrit.Invoke(httpServer)
+	members := grouper.Members{
+		{"httpserver", httpServer},
+	}
+
+	processes := grouper.NewOrdered(syscall.SIGINT, members)
+	monitor := ifrit.Invoke(sigmon.New(processes))
 	err := <-monitor.Wait()
 	if err != nil {
 		panic(err)

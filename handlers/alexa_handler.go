@@ -14,9 +14,9 @@ type handler struct {
 	gCalendar utils.GCalendar
 }
 
-func NewHandler(gCalendar utils.GCalendar) handler {
+func NewHandler(gCalendarRunner utils.CalendarRunner) handler {
 	return handler{
-		gCalendar: gCalendar,
+		gCalendar: gCalendarRunner.GCalendar,
 	}
 }
 
