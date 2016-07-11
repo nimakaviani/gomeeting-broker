@@ -14,10 +14,8 @@ type handler struct {
 	gCalendar utils.GCalendar
 }
 
-func NewHandler(gCalendarRunner utils.CalendarRunner) handler {
-	return handler{
-		gCalendar: gCalendarRunner.GCalendar,
-	}
+func NewHandler() handler {
+	return handler{}
 }
 
 func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
@@ -30,7 +28,8 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 	fmt.Printf("request %#v\n", alexaRequest)
 	startTime, duration, err := utils.Parse(alexaRequest)
 
-	h.gCalendar.FindRoom(startTime, duration)
+	calendar := utils.NewGCalendar(utils.GetClient())
+	calendar.FindRoom(startTime, duration)
 
 	if err != nil {
 		logger.Error("failed-parse-duration", err)

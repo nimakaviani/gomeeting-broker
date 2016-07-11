@@ -6,7 +6,6 @@ import (
 	"syscall"
 
 	"github.com/nimakaviani/gomeeting-broker/handlers"
-	"github.com/nimakaviani/gomeeting-broker/utils"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -23,9 +22,9 @@ func main() {
 	flag.Parse()
 
 	httpServer := http_server.New(":"+*port, http.DefaultServeMux)
-	gCalendarRunner := utils.NewCalendarRunner()
 
-	handler := handlers.NewHandler(gCalendarRunner)
+	println("initializing ...")
+	handler := handlers.NewHandler()
 	http.HandleFunc("/findroom", handler.Alexa)
 	http.HandleFunc("/google73d91fa1cfb6fa88.html", handler.Verify)
 	http.HandleFunc("/oauth", handler.OAuth)
