@@ -1,17 +1,25 @@
 package utils
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"google.golang.org/api/calendar/v3"
 )
 
+type Room struct {
+	Location  string
+	Name      string
+	Capacity  int
+	Phone     string
+	Extension string
+}
+
 type GCalendar interface {
-	FindRoom(startTime time.Time, duration time.Duration)
+	FindRoom(startTime time.Time, duration time.Duration) []Room
 }
 
 type gCalendar struct {
@@ -24,10 +32,8 @@ func NewGCalendar(client *http.Client) GCalendar {
 	}
 }
 
-func (g *gCalendar) FindRoom(startTime time.Time, duration time.Duration) {
-
+func (g *gCalendar) FindRoom(startTime time.Time, duration time.Duration) []Room {
 	srv, err := calendar.New(g.client)
-
 	if err != nil {
 		log.Fatalf("Unable to retrieve calendar Client %v", err)
 	}
@@ -37,7 +43,7 @@ func (g *gCalendar) FindRoom(startTime time.Time, duration time.Duration) {
 		log.Print("Unable to retrieve calendar Client %v", err)
 	}
 
-	calendarItems := g.filterCalendarRequestItems(calList.Items, "gmail.com")
+	calendarItems := g.filterCalendarRequestItems(calList.Items, "pivotal.io")
 
 	freeBusy := calendar.NewFreebusyService(srv)
 	freeBusyResponse, err := freeBusy.Query(&calendar.FreeBusyRequest{
@@ -46,13 +52,23 @@ func (g *gCalendar) FindRoom(startTime time.Time, duration time.Duration) {
 		Items:   calendarItems,
 	}).Do()
 
-	fmt.Printf("Results %#v\n\n\n", freeBusyResponse)
+	matchedRooms := []Room{}
+	for key, calendar := range freeBusyResponse.Calendars {
+		if len(calendar.Busy) == 0 {
+			matchedRoom := g.findRoom(calList, key)
+			if matchedRoom != (Room{}) {
+				matchedRooms = append(matchedRooms, matchedRoom)
+			}
+		}
+	}
+
+	return matchedRooms
 }
 
 func (g *gCalendar) filterCalendarRequestItems(items []*calendar.CalendarListEntry, filter string) []*calendar.FreeBusyRequestItem {
 	regex, err := regexp.Compile(filter)
 	if err != nil {
-		log.Fatalf("Failed with error %#v", err)
+		log.Fatalf("Regex failed with error %#v", err)
 	}
 
 	calendarItems := []*calendar.FreeBusyRequestItem{}
@@ -65,4 +81,31 @@ func (g *gCalendar) filterCalendarRequestItems(items []*calendar.CalendarListEnt
 	}
 
 	return calendarItems
+}
+
+func (g *gCalendar) findRoom(calendars *calendar.CalendarList, calendarKey string) Room {
+	regex, err := regexp.Compile(`(.+) - ([a-zA-Z]+) .~(\d+) people\) (.+) ([a-zA-Z]+.*)`)
+	if err != nil {
+		log.Fatalf("Regex failed with error %#v", err)
+	}
+
+	for _, calendarItem := range calendars.Items {
+		if calendarItem.Id == calendarKey {
+			matchedStrings := regex.FindStringSubmatch(calendarItem.Summary)
+			capacity, err := strconv.Atoi(matchedStrings[3])
+			if err != nil {
+				log.Fatalf("Regex failed with error %#v", err)
+			}
+
+			return Room{
+				Location:  matchedStrings[1],
+				Name:      matchedStrings[2],
+				Capacity:  capacity,
+				Phone:     matchedStrings[4],
+				Extension: matchedStrings[5],
+			}
+		}
+	}
+
+	return Room{}
 }

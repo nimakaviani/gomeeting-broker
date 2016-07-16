@@ -9,8 +9,24 @@ import (
 	"github.com/nimakaviani/gomeeting-broker/models"
 )
 
-func PrepareResponse(startTime time.Time, duration time.Duration) string {
-	return fmt.Sprintf("Hello world! %#v", startTime)
+func PrepareResponse(room Room, startTime time.Time, duration time.Duration) string {
+	hour, minute, _ := startTime.Clock()
+	amPM := "AM"
+
+	if hour > 12 {
+		hour = hour - 12
+		amPM = "PM"
+	}
+
+	startTimeString := fmt.Sprintf("%d:%d%s", hour, minute, amPM)
+	if minute == 0 {
+		startTimeString = fmt.Sprintf("%d%s", hour, amPM)
+	}
+
+	return fmt.Sprintf("Room %s is available from %s for %s", room.Name,
+		startTimeString,
+		humanizeLength(int(duration.Seconds())),
+	)
 }
 
 func Parse(alexaRequest models.AlexaRequest) (time.Time, time.Duration, error) {
@@ -44,16 +60,16 @@ func parseTime(alexaSlot models.AlexaSlot) (time.Time, error) {
 	return time.Now(), nil
 }
 
-func humanizeLength(length int) (int, string) {
+func humanizeLength(length int) string {
 	switch {
 	case length <= 60:
-		return 1, "minute"
+		return "1 minute"
 	case length < 3600:
-		return length / 60, "minutes"
+		return strconv.Itoa(length/60) + " minutes"
 	case length > 3600:
-		return length / 3600, "hours"
+		return strconv.Itoa(length/3600) + " hours"
 	default:
-		return 1, "hour"
+		return "1 hour"
 	}
 }
 
