@@ -12,14 +12,16 @@ import (
 
 type handler struct {
 	gCalendar utils.GCalendar
+	config    models.Config
 }
 
-func NewHandler() handler {
-	return handler{}
+func NewHandler(config models.Config) handler {
+	return handler{config: config}
 }
 
 func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 	logger := lager.NewLogger("alexa")
+
 	alexaRequest := models.AlexaRequest{}
 	err := json.NewDecoder(request.Body).Decode(&alexaRequest)
 

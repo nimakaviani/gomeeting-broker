@@ -85,6 +85,11 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 	}
 	t := &oauth2.Token{}
 	err = json.NewDecoder(f).Decode(t)
+
+	if t.RefreshToken == "" {
+		log.Fatal("Refresh token is not set")
+	}
+
 	defer f.Close()
 	return t, err
 }
