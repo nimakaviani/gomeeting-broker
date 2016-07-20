@@ -29,10 +29,16 @@ func PrepareResponse(room Room, startTime time.Time, duration time.Duration) str
 	)
 }
 
-func Parse(alexaRequest models.AlexaRequest) (time.Time, time.Duration, error) {
+func Parse(alexaRequest models.AlexaRequest, config models.Config) (*time.Time, *time.Duration, error) {
 	startTime, err := parseTime(alexaRequest.Request.Intent.Slots["StartAt"])
 	duration, err := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
-	return startTime, duration, err
+
+	timeLocation, err := time.LoadLocation(config.Timezone)
+	if err != nil {
+		return nil, nil, err
+	}
+	localTime := startTime.In(timeLocation)
+	return &localTime, &duration, err
 }
 
 func parseTime(alexaSlot models.AlexaSlot) (time.Time, error) {

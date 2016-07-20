@@ -6,7 +6,8 @@ import (
 )
 
 type Config struct {
-	URL string `json:"url"`
+	URL      string `json:"url"`
+	Timezone string `json:"timezone"`
 }
 
 func LoadConfig(filePath string) (Config, error) {

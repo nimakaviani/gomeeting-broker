@@ -27,16 +27,16 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 
 	alexaResp := models.NewAlexaResponse()
 
-	startTime, duration, err := utils.Parse(alexaRequest)
+	startTime, duration, err := utils.Parse(alexaRequest, h.config)
 
 	calendar := utils.NewGCalendar(utils.GetClient())
-	rooms := calendar.FindRoom(startTime, duration)
+	rooms := calendar.FindRoom(*startTime, *duration)
 
 	if err != nil {
 		logger.Error("failed-parse-duration", err)
 		alexaResp.OutputSpeech("I could not understand your request")
 	} else {
-		alexaResp.OutputSpeech(utils.PrepareResponse(rooms[0], startTime, duration))
+		alexaResp.OutputSpeech(utils.PrepareResponse(rooms[0], *startTime, *duration))
 		if err != nil {
 			logger.Error("failed-prepare-response", err)
 		}
