@@ -30,22 +30,22 @@ func PrepareResponse(room Room, startTime time.Time, duration time.Duration) str
 }
 
 func Parse(alexaRequest models.AlexaRequest, config models.Config) (*time.Time, *time.Duration, error) {
-	startTime, err := parseTime(alexaRequest.Request.Intent.Slots["StartAt"])
+	startTime, err := parseTime(alexaRequest.Request.Intent.Slots["StartAt"], config)
 	duration, err := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
 
-	timeLocation, err := time.LoadLocation(config.Timezone)
-	if err != nil {
-		return nil, nil, err
-	}
-	localTime := startTime.In(timeLocation)
-	return &localTime, &duration, err
+	return startTime, &duration, err
 }
 
-func parseTime(alexaSlot models.AlexaSlot) (time.Time, error) {
+func parseTime(alexaSlot models.AlexaSlot, config models.Config) (*time.Time, error) {
+	currentTime := time.Now()
+	timeLocation, err := time.LoadLocation(config.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	localTime := currentTime.In(timeLocation)
+
 	if alexaSlot.Value != "" {
 		parsedTime, err := time.Parse("15:04", alexaSlot.Value)
-
-		currentTime := time.Now()
 
 		expectTime := time.Date(
 			currentTime.Year(),
@@ -59,11 +59,11 @@ func parseTime(alexaSlot models.AlexaSlot) (time.Time, error) {
 		)
 
 		if err != nil {
-			return time.Now(), err
+			return &localTime, err
 		}
-		return expectTime, nil
+		return &expectTime, nil
 	}
-	return time.Now(), nil
+	return &localTime, nil
 }
 
 func humanizeLength(length int) string {
