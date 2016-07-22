@@ -13,10 +13,14 @@ import (
 type handler struct {
 	gCalendar utils.GCalendar
 	config    models.Config
+	datastore utils.DataStore
 }
 
-func NewHandler(config models.Config) handler {
-	return handler{config: config}
+func NewHandler(config models.Config, datastore utils.DataStore) handler {
+	return handler{
+		config:    config,
+		datastore: datastore,
+	}
 }
 
 func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
@@ -29,7 +33,7 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 
 	startTime, duration, err := utils.Parse(alexaRequest, h.config)
 
-	calendar := utils.NewGCalendar(utils.GetClient())
+	calendar := utils.NewGCalendar(utils.GetClient(h.datastore))
 	rooms := calendar.FindRoom(*startTime, *duration)
 
 	if err != nil {

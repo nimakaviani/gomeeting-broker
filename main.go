@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"net/http"
+	"os"
 	"syscall"
 
 	"github.com/nimakaviani/gomeeting-broker/handlers"
 	"github.com/nimakaviani/gomeeting-broker/models"
+	"github.com/nimakaviani/gomeeting-broker/utils"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -29,8 +31,17 @@ func main() {
 		panic(err)
 	}
 
+	println("initializing datastore ...")
+	user, password, name, host := os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_HOST")
+	datastore := utils.NewDBDataStore(user, password, name, host)
+	err = datastore.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer datastore.Close()
+
 	println("initializing handlers ...")
-	handler := handlers.NewHandler(config)
+	handler := handlers.NewHandler(config, datastore)
 	http.HandleFunc("/findroom", handler.Alexa)
 	http.HandleFunc("/google73d91fa1cfb6fa88.html", handler.Verify)
 	http.HandleFunc("/oauth", handler.OAuth)
