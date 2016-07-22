@@ -32,7 +32,10 @@ func (h handler) OAuthCallback(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	utils.SaveToken(token)
+	err = h.datastore.SaveToken(*token)
+	if err != nil {
+		log.Fatalf("Saving to datastore: %v", err)
+	}
 
 	writer.WriteHeader(http.StatusOK)
 	writer.Write([]byte("Thank you! You are registered!"))
