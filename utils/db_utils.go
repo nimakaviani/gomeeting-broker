@@ -22,25 +22,31 @@ type DataStore interface {
 type datastore struct {
 	db *sql.DB
 
-	user     string
-	password string
-	name     string
-	host     string
+	User     string
+	Password string
+	Name     string
+	Host     string
 }
 
 func NewDBDataStore(user, password, name, host string) DataStore {
 	return &datastore{
-		user:     user,
-		name:     name,
-		password: password,
-		host:     host,
+		User:     user,
+		Name:     name,
+		Password: password,
+		Host:     host,
 	}
 }
 
 func (d *datastore) Init() error {
 	var err error
 
-	dbInfo := fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", d.user, d.password, d.name, d.host)
+	dbInfo := fmt.Sprintf(
+		"user=%s password=%s dbname=%s host=%s sslmode=disable",
+		d.User,
+		d.Password,
+		d.Name,
+		d.Host,
+	)
 
 	d.db, err = sql.Open("postgres", dbInfo)
 	if err != nil {
@@ -57,7 +63,6 @@ func (d *datastore) Close() error {
 func (d *datastore) SaveToken(token oauth2.Token) error {
 	var err error
 
-	fmt.Printf("=====> d.db: %v\n", d.db)
 	_, err = d.db.Exec("DELETE FROM credentials;")
 	if err != nil {
 		return err
@@ -68,7 +73,11 @@ func (d *datastore) SaveToken(token oauth2.Token) error {
 		log.Fatal(err)
 	}
 
-	_, err = d.db.Exec(fmt.Sprintf("INSERT INTO credentials (name, credential) VALUES ('%s', '%s');", "oauth", string(tokenJson)))
+	_, err = d.db.Exec(fmt.Sprintf(
+		"INSERT INTO credentials (name, credential) VALUES ('%s', '%s');",
+		"oauth",
+		string(tokenJson),
+	))
 	if err != nil {
 		return err
 	}
