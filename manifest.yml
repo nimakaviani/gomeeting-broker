@@ -4,4 +4,4 @@ applications:
     command: gomeeting-broker
     env:
       GOPACKAGENAME: github.com/nimakaviani/gomeeting-broker
-      GOVERSION: go1.6
+      GOVERSION: go1.6.3
