@@ -1,4 +1,174 @@
 {
   "url": "https://37f59687.ngrok.io/oauth",
-  "timezone": "America/Los_Angeles"
+  "timezone": "America/Los_Angeles",
+  "rooms": [
+    {
+      "name": "andromeda",
+      "location": "to the north of the building, facing howard street",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "aquarius",
+      "location": "to the north of the building, facing howard street",
+      "floor": "fourth",
+      "capacity": 12
+    },
+    {
+      "name": "argo",
+      "location": "to the north of the building, facing howard street",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "argon",
+      "location": "in the middle, by the stairs",
+      "floor": "fifth",
+      "capacity": 6
+    },
+    {
+      "name": "cadmium",
+      "location": "in front of the lobby space, in the middle",
+      "floor": "fifth",
+      "capacity": 6
+    },
+    {
+      "name": "capricornus",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fourth",
+      "capacity": 12
+    },
+    {
+      "name": "cobalt",
+      "location": "in front of the lobby space, in the middle",
+      "floor": "fifth",
+      "capacity": 6
+    },
+    {
+      "name": "draco",
+      "location": "to the north of the building, facing howard street",
+      "floor": "fourth",
+      "capacity": 8
+    },
+    {
+      "name": "gemini",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "gold",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fifth",
+      "capacity": 10
+    },
+    {
+      "name": "helium",
+      "location": "in front of the lobby space, in the middle",
+      "floor": "fifth",
+      "capacity": 6
+    },
+    {
+      "name": "hercules",
+      "location": "to the north of the building, facing howard street",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "krypton",
+      "location": "in the middle, by the stair",
+      "floor": "fifth",
+      "capacity": 6
+    },
+    {
+      "name": "lepus",
+      "location": "in front of the lobby space, in the middle",
+      "floor": "fourth",
+      "capacity": 6
+    },
+    {
+      "name": "neon",
+      "location": "in front of the lobby space, in the middle",
+      "floor": "fifth",
+      "capacity": 10
+    },
+    {
+      "name": "orion",
+      "location": "in front of the lobby space, in the middle",
+      "floor": "fourth",
+      "capacity": 6
+    },
+    {
+      "name": "palladium",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fifth",
+      "capacity": 10
+    },
+    {
+      "name": "pegasus",
+      "location": "to the west of the building, facing folsom street",
+      "floor": "fourth",
+      "capacity": 4
+    },
+    {
+      "name": "perseus",
+      "location": "to the west of the building, facing folsom street",
+      "floor": "fourth",
+      "capacity": 4
+    },
+    {
+      "name": "phoenix",
+      "location": "to the west of the building, facing folsom street",
+      "floor": "fourth",
+      "capacity": 6
+    },
+    {
+      "name": "pictor",
+      "location": "to the north of the building, facing howard street",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "platinum",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fifth",
+      "capacity": 12
+    },
+    {
+      "name": "scorpius",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fourth",
+      "capacity": 12
+    },
+    {
+      "name": "silver",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fourth",
+      "capacity": 12
+    },
+    {
+      "name": "taurus",
+      "location": "in the middle of the building, towards the west",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "telepresence",
+      "location": "in the middle of the building, facing the event space",
+      "floor": "fourth",
+      "capacity": 10
+    },
+    {
+      "name": "titanium",
+      "location": "to the east of the building, behind the elevators",
+      "floor": "fifth",
+      "capacity": 12
+    },
+    {
+      "name": "ursa major",
+      "location": "in the middle of the building, facing the event space",
+      "floor": "fourth",
+      "capacity": 20
+    }
+  ]
 }

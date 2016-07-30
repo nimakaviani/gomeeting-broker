@@ -4,12 +4,61 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nimakaviani/gomeeting-broker/models"
 )
 
-func PrepareResponse(room Room, startTime time.Time, duration time.Duration) string {
+const (
+	FindRoom = "FindRoom"
+	Locator  = "Locator"
+)
+
+func ParseAndGetResponse(alexaRequest models.AlexaRequest, config models.Config, datastore DataStore) (string, error) {
+
+	switch alexaRequest.Request.Intent.Name {
+	case FindRoom:
+		startTime, err := parseTime(alexaRequest.Request.Intent.Slots["StartAt"], config)
+		if err != nil {
+			return "", err
+		}
+
+		duration, err := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
+		if err != nil {
+			return "", err
+		}
+
+		calendar := NewGCalendar(GetClient(datastore))
+		rooms := calendar.FindRoom(*startTime, duration)
+
+		return prepareResponse(rooms[0], *startTime, duration), nil
+
+	case Locator:
+		roomName := strings.ToLower(alexaRequest.Request.Intent.Slots["RoomName"].Value)
+		phrase, err := composeRoomLocation(roomName, config)
+		if err != nil {
+			return "", err
+		}
+		return phrase, nil
+	}
+	return "", fmt.Errorf("Could not find the defined slot")
+}
+
+func composeRoomLocation(roomName string, config models.Config) (string, error) {
+	for _, roomObj := range config.Rooms {
+		if roomObj.Name == roomName {
+			return fmt.Sprintf(
+				"%s is located on the %s floor, %s",
+				roomObj.Name,
+				roomObj.Floor,
+				roomObj.Location), nil
+		}
+	}
+	return "", fmt.Errorf("room not found")
+}
+
+func prepareResponse(room Room, startTime time.Time, duration time.Duration) string {
 	hour, minute, _ := startTime.Clock()
 	amPM := "AM"
 
@@ -27,13 +76,6 @@ func PrepareResponse(room Room, startTime time.Time, duration time.Duration) str
 		startTimeString,
 		humanizeLength(int(duration.Seconds())),
 	)
-}
-
-func Parse(alexaRequest models.AlexaRequest, config models.Config) (*time.Time, *time.Duration, error) {
-	startTime, err := parseTime(alexaRequest.Request.Intent.Slots["StartAt"], config)
-	duration, err := parseDuration(alexaRequest.Request.Intent.Slots["Length"])
-
-	return startTime, &duration, err
 }
 
 func parseTime(alexaSlot models.AlexaSlot, config models.Config) (*time.Time, error) {
