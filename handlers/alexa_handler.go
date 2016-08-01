@@ -29,8 +29,10 @@ func (h handler) Alexa(writer http.ResponseWriter, request *http.Request) {
 	alexaRequest := models.AlexaRequest{}
 	err := json.NewDecoder(request.Body).Decode(&alexaRequest)
 
+	fmt.Printf("AlexaRequest: %#v \n\n", alexaRequest)
+
 	alexaResp := models.NewAlexaResponse()
-	response, err := utils.ParseAndGetResponse(alexaRequest, h.config, h.datastore)
+	response, err := utils.ParseAndRespond(alexaRequest, h.config, h.datastore)
 	if err != nil {
 		logger.Error("failed-parse-duration", err)
 		alexaResp.OutputSpeech("I could not understand your request")

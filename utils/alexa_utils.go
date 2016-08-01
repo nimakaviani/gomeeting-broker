@@ -15,7 +15,7 @@ const (
 	Locator  = "Locator"
 )
 
-func ParseAndGetResponse(alexaRequest models.AlexaRequest, config models.Config, datastore DataStore) (string, error) {
+func ParseAndRespond(alexaRequest models.AlexaRequest, config models.Config, datastore DataStore) (string, error) {
 
 	switch alexaRequest.Request.Intent.Name {
 	case FindRoom:
@@ -31,11 +31,12 @@ func ParseAndGetResponse(alexaRequest models.AlexaRequest, config models.Config,
 
 		calendar := NewGCalendar(GetClient(datastore))
 		rooms := calendar.FindRoom(*startTime, duration)
-
-		return prepareResponse(rooms[0], *startTime, duration), nil
+		return prepareRoomResponse(rooms[0], *startTime, duration), nil
 
 	case Locator:
-		roomName := strings.ToLower(alexaRequest.Request.Intent.Slots["RoomName"].Value)
+		fuzzifier := models.NewFuzzifier(config)
+		alexaRoomName := strings.ToLower(alexaRequest.Request.Intent.Slots["RoomName"].Value)
+		roomName := fuzzifier.Suggest(alexaRoomName)
 		phrase, err := composeRoomLocation(roomName, config)
 		if err != nil {
 			return "", err
@@ -58,7 +59,7 @@ func composeRoomLocation(roomName string, config models.Config) (string, error) 
 	return "", fmt.Errorf("room not found")
 }
 
-func prepareResponse(room Room, startTime time.Time, duration time.Duration) string {
+func prepareRoomResponse(room Room, startTime time.Time, duration time.Duration) string {
 	hour, minute, _ := startTime.Clock()
 	amPM := "AM"
 
